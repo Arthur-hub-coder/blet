@@ -6,17 +6,17 @@ let sendForm = document.getElementById('send-form');
 let inputField = document.getElementById('input');
 
 // Подключение к устройству при нажатии на кнопку Connect
-connectButton.addEventListener('click', function() {
+connectButton.addEventListener('click', function () {
   webblue();
 });
 
 // Отключение от устройства при нажатии на кнопку Disconnect
-disconnectButton.addEventListener('click', function() {
+disconnectButton.addEventListener('click', function () {
   disconnect();
 });
 
 // Обработка события отправки формы
-sendForm.addEventListener('submit', function(event) {
+sendForm.addEventListener('submit', function (event) {
   event.preventDefault(); // Предотвратить отправку формы
   send(inputField.value); // Отправить содержимое текстового поля
   inputField.value = '';  // Обнулить текстовое поле
@@ -35,10 +35,10 @@ let readBuffer = '';
 // Запустить выбор Bluetooth устройства и подключиться к выбранному
 function connect() {
   return (deviceCache ? Promise.resolve(deviceCache) :
-      requestBluetoothDevice()).
-      then(device => connectDeviceAndCacheCharacteristic(device)).
-      then(characteristic => startNotifications(characteristic)).
-      catch(error => log(error));
+    requestBluetoothDevice()).
+    then(device => connectDeviceAndCacheCharacteristic(device)).
+    then(characteristic => startNotifications(characteristic)).
+    catch(error => log(error));
 }
 
 // Запрос выбора Bluetooth устройства
@@ -49,14 +49,14 @@ function requestBluetoothDevice() {
     acceptAllDevices: true,
     optionalServices: ['device_information']
   }).
-      then(device => {
-        log('"' + device.name + '" bluetooth device selected');
-        deviceCache = device;
-        deviceCache.addEventListener('gattserverdisconnected',
-            handleDisconnection);
+    then(device => {
+      log('"' + device.name + '" bluetooth device selected');
+      deviceCache = device;
+      deviceCache.addEventListener('gattserverdisconnected',
+        handleDisconnection);
 
-        return deviceCache;
-      });
+      return deviceCache;
+    });
 }
 
 // Обработчик разъединения
@@ -64,11 +64,11 @@ function handleDisconnection(event) {
   let device = event.target;
 
   log('"' + device.name +
-      '" bluetooth device disconnected, trying to reconnect...');
+    '" bluetooth device disconnected, trying to reconnect...');
 
   connectDeviceAndCacheCharacteristic(device).
-      then(characteristic => startNotifications(characteristic)).
-      catch(error => log(error));
+    then(characteristic => startNotifications(characteristic)).
+    catch(error => log(error));
 }
 
 // Подключение к определенному устройству, получение сервиса и характеристики
@@ -80,22 +80,22 @@ function connectDeviceAndCacheCharacteristic(device) {
   log('Connecting to GATT server...');
 
   return device.gatt.connect().
-      then(server => {
-        log('GATT server connected, getting service...');
+    then(server => {
+      log('GATT server connected, getting service...');
 
-        return server.getPrimaryService(0xFFE0);
-      }).
-      then(service => {
-        log('Service found, getting characteristic...');
+      return server.getPrimaryService(0xFFE0);
+    }).
+    then(service => {
+      log('Service found, getting characteristic...');
 
-        return service.getCharacteristic(0xFFE1);
-      }).
-      then(characteristic => {
-        log('Characteristic found');
-        characteristicCache = characteristic;
+      return service.getCharacteristic(0xFFE1);
+    }).
+    then(characteristic => {
+      log('Characteristic found');
+      characteristicCache = characteristic;
 
-        return characteristicCache;
-      });
+      return characteristicCache;
+    });
 }
 
 // Включение получения уведомлений об изменении характеристики
@@ -103,11 +103,11 @@ function startNotifications(characteristic) {
   log('Starting notifications...');
 
   return characteristic.startNotifications().
-      then(() => {
-        log('Notifications started');
-        characteristic.addEventListener('characteristicvaluechanged',
-            handleCharacteristicValueChanged);
-      });
+    then(() => {
+      log('Notifications started');
+      characteristic.addEventListener('characteristicvaluechanged',
+        handleCharacteristicValueChanged);
+    });
 }
 
 // Получение данных
@@ -137,7 +137,7 @@ function receive(data) {
 // Вывод в терминал
 function log(data, type = '') {
   terminalContainer.insertAdjacentHTML('beforeend',
-      '<div' + (type ? ' class="' + type + '"' : '') + '>' + data + '</div>');
+    '<div' + (type ? ' class="' + type + '"' : '') + '>' + data + '</div>');
 }
 
 // Отключиться от подключенного устройства
@@ -145,7 +145,7 @@ function disconnect() {
   if (deviceCache) {
     log('Disconnecting from "' + deviceCache.name + '" bluetooth device...');
     deviceCache.removeEventListener('gattserverdisconnected',
-        handleDisconnection);
+      handleDisconnection);
 
     if (deviceCache.gatt.connected) {
       deviceCache.gatt.disconnect();
@@ -153,13 +153,13 @@ function disconnect() {
     }
     else {
       log('"' + deviceCache.name +
-          '" bluetooth device is already disconnected');
+        '" bluetooth device is already disconnected');
     }
   }
 
   if (characteristicCache) {
     characteristicCache.removeEventListener('characteristicvaluechanged',
-        handleCharacteristicValueChanged);
+      handleCharacteristicValueChanged);
     characteristicCache = null;
   }
 
@@ -202,104 +202,105 @@ function writeToCharacteristic(characteristic, data) {
 function webblue() {
   log('Requesting any Bluetooth Device...');
   navigator.bluetooth.requestDevice({
-   // filters: [...] <- Prefer filters to save energy & show relevant devices.
-      acceptAllDevices: true,
-      optionalServices: ['device_information']})
-  .then(device => {
-    log('Connecting to GATT Server...');
-    return device.gatt.connect();
+    filters: [{namePrefix: "MK TR"}],
+    //acceptAllDevices: true,
+    optionalServices: [0x552f]
   })
-  .then(server => {
-    log('Getting Device Information Service...');
-    return server.getPrimaryService('device_information');
-  })
-  .then(service => {
-    log('Getting Device Information Characteristics...');
-    return service.getCharacteristics();
-  })
-  .then(characteristics => {
-    let queue = Promise.resolve();
-    let decoder = new TextDecoder('utf-8');
-    characteristics.forEach(characteristic => {
-      switch (characteristic.uuid) {
+    .then(device => {
+      log('Connecting to GATT Server...');
+      return device.gatt.connect();
+    })
+    .then(server => {
+      log('Getting 0x552f');
+      return server.getPrimaryService(0x552f);
+    })
+    .then(service => {
+      log('Getting Device Information Characteristics...');
+      return service.getCharacteristics();
+    })
+    .then(characteristics => {
+      let queue = Promise.resolve();
+      let decoder = new TextDecoder('utf-16');
+      characteristics.forEach(characteristic => {
+        switch (characteristic.uuid) {
 
-        case BluetoothUUID.getCharacteristic('manufacturer_name_string'):
-          queue = queue.then(_ => characteristic.readValue()).then(value => {
-            log('> Manufacturer Name String: ' + decoder.decode(value));
-          });
-          break;
+          case BluetoothUUID.getCharacteristic(0xff01):
+            queue = queue.then(_ => characteristic.readValue()).then(value => {
+              log('> EUI: ' +  getHexFromDataView(value, 8));
+            });
+            break;
 
-        case BluetoothUUID.getCharacteristic('model_number_string'):
-          queue = queue.then(_ => characteristic.readValue()).then(value => {
-            log('> Model Number String: ' + decoder.decode(value));
-          });
-          break;
+          case BluetoothUUID.getCharacteristic(0xff02):
+            queue = queue.then(_ => characteristic.readValue()).then(value => {
+              log('> NWKS: ' + getHexFromDataView(value, 16));
+            });
+            break;
 
-        case BluetoothUUID.getCharacteristic('hardware_revision_string'):
-          queue = queue.then(_ => characteristic.readValue()).then(value => {
-            log('> Hardware Revision String: ' + decoder.decode(value));
-          });
-          break;
+          case BluetoothUUID.getCharacteristic(0xff03):
+            queue = queue.then(_ => characteristic.readValue()).then(value => {
+              log('> Apps: ' + getHexFromDataView(value, 16));
+            });
+            break;
 
-        case BluetoothUUID.getCharacteristic('firmware_revision_string'):
-          queue = queue.then(_ => characteristic.readValue()).then(value => {
-            log('> Firmware Revision String: ' + decoder.decode(value));
-          });
-          break;
+          case BluetoothUUID.getCharacteristic(0xff04):
+            queue = queue.then(_ => characteristic.readValue()).then(value => {
+              log('> App: ' + getHexFromDataView(value, 16));
+            });
+            break;
 
-        case BluetoothUUID.getCharacteristic('software_revision_string'):
-          queue = queue.then(_ => characteristic.readValue()).then(value => {
-            log('> Software Revision String: ' + decoder.decode(value));
-          });
-          break;
+          case BluetoothUUID.getCharacteristic('software_revision_string'):
+            queue = queue.then(_ => characteristic.readValue()).then(value => {
+              log('> Software Revision String: ' + parseInt(value, 16));
+            });
+            break;
 
-        case BluetoothUUID.getCharacteristic('system_id'):
-          queue = queue.then(_ => characteristic.readValue()).then(value => {
-            log('> System ID: ');
-            log('  > Manufacturer Identifier: ' +
+          case BluetoothUUID.getCharacteristic('system_id'):
+            queue = queue.then(_ => characteristic.readValue()).then(value => {
+              log('> System ID: ');
+              log('  > Manufacturer Identifier: ' +
                 padHex(value.getUint8(4)) + padHex(value.getUint8(3)) +
                 padHex(value.getUint8(2)) + padHex(value.getUint8(1)) +
                 padHex(value.getUint8(0)));
-            log('  > Organizationally Unique Identifier: ' +
+              log('  > Organizationally Unique Identifier: ' +
                 padHex(value.getUint8(7)) + padHex(value.getUint8(6)) +
                 padHex(value.getUint8(5)));
-          });
-          break;
+            });
+            break;
 
-        case BluetoothUUID.getCharacteristic('ieee_11073-20601_regulatory_certification_data_list'):
-          queue = queue.then(_ => characteristic.readValue()).then(value => {
-            log('> IEEE 11073-20601 Regulatory Certification Data List: ' +
+          case BluetoothUUID.getCharacteristic('ieee_11073-20601_regulatory_certification_data_list'):
+            queue = queue.then(_ => characteristic.readValue()).then(value => {
+              log('> IEEE 11073-20601 Regulatory Certification Data List: ' +
                 decoder.decode(value));
-          });
-          break;
+            });
+            break;
 
-        case BluetoothUUID.getCharacteristic('pnp_id'):
-          queue = queue.then(_ => characteristic.readValue()).then(value => {
-            log('> PnP ID:');
-            log('  > Vendor ID Source: ' +
+          case BluetoothUUID.getCharacteristic('pnp_id'):
+            queue = queue.then(_ => characteristic.readValue()).then(value => {
+              log('> PnP ID:');
+              log('  > Vendor ID Source: ' +
                 (value.getUint8(0) === 1 ? 'Bluetooth' : 'USB'));
-            if (value.getUint8(0) === 1) {
-              log('  > Vendor ID: ' +
+              if (value.getUint8(0) === 1) {
+                log('  > Vendor ID: ' +
                   (value.getUint8(1) | value.getUint8(2) << 8));
-            } else {
-              log('  > Vendor ID: ' +
+              } else {
+                log('  > Vendor ID: ' +
                   getUsbVendorName(value.getUint8(1) | value.getUint8(2) << 8));
-            }
-            log('  > Product ID: ' +
+              }
+              log('  > Product ID: ' +
                 (value.getUint8(3) | value.getUint8(4) << 8));
-            log('  > Product Version: ' +
+              log('  > Product Version: ' +
                 (value.getUint8(5) | value.getUint8(6) << 8));
-          });
-          break;
+            });
+            break;
 
-        default: log('> Unknown Characteristic: ' + characteristic.uuid);
-      }
+          default: log('> Unknown Characteristic: ' + characteristic.uuid);
+        }
+      });
+      return queue;
+    })
+    .catch(error => {
+      log('Argh! ' + error);
     });
-    return queue;
-  })
-  .catch(error => {
-    log('Argh! ' + error);
-  });
 }
 
 /* Utils */
@@ -311,5 +312,13 @@ function padHex(value) {
 function getUsbVendorName(value) {
   // Check out page source to see what valueToUsbVendorName object is.
   return value +
-      (value in valueToUsbVendorName ? ' (' + valueToUsbVendorName[value] + ')' : '');
+    (value in valueToUsbVendorName ? ' (' + valueToUsbVendorName[value] + ')' : '');
+}
+
+function getHexFromDataView(value, count) {
+  let hexString ='';
+  for (let index = 0; index < count; index++) {
+    hexString += padHex(value.getUint8(index));
+  }
+  return hexString;
 }
