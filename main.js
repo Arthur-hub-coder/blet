@@ -1,9 +1,18 @@
 // Получение ссылок на элементы UI
 let connectButton = document.getElementById('connect');
 let disconnectButton = document.getElementById('disconnect');
+let autoconnectButton = document.getElementById('autoconnect');
+let createDeviceButton = document.getElementById('createdevice');
+let updateDeviceButton = document.getElementById('updatedevice');
 let terminalContainer = document.getElementById('terminal');
 let sendForm = document.getElementById('send-form');
 let inputField = document.getElementById('input');
+let EUI;
+let NWKS;
+let Apps;
+let App;
+let WSRequest;
+//let socket = new WebSocket("wss://loranet.kz/ws/v2/?app_id=9F9014F4&token=0HC9WPr5plR6kXmMNicKNu");
 
 // Подключение к устройству при нажатии на кнопку Connect
 connectButton.addEventListener('click', function () {
@@ -13,6 +22,18 @@ connectButton.addEventListener('click', function () {
 // Отключение от устройства при нажатии на кнопку Disconnect
 disconnectButton.addEventListener('click', function () {
   disconnect();
+});
+
+autoconnectButton.addEventListener('click', function () {
+  autoconnect();
+});
+
+createDeviceButton.addEventListener('click', function () {
+  createDevice();
+});
+
+updateDeviceButton.addEventListener('click', function () {
+  updateDevice();
 });
 
 // Обработка события отправки формы
@@ -226,25 +247,29 @@ function webblue() {
 
           case BluetoothUUID.getCharacteristic(0xff01):
             queue = queue.then(_ => characteristic.readValue()).then(value => {
-              log('> EUI: ' +  getHexFromDataView(value, 8));
+              EUI = getHexFromDataView(value, 8);
+              log('> EUI: ' +  EUI);
             });
             break;
 
           case BluetoothUUID.getCharacteristic(0xff02):
             queue = queue.then(_ => characteristic.readValue()).then(value => {
-              log('> NWKS: ' + getHexFromDataView(value, 16));
+              NWKS = getHexFromDataView(value, 16);
+              log('> NWKS: ' + NWKS);
             });
             break;
 
           case BluetoothUUID.getCharacteristic(0xff03):
             queue = queue.then(_ => characteristic.readValue()).then(value => {
-              log('> Apps: ' + getHexFromDataView(value, 16));
+              Apps = getHexFromDataView(value, 16);
+              log('> Apps: ' + Apps);
             });
             break;
 
           case BluetoothUUID.getCharacteristic(0xff04):
             queue = queue.then(_ => characteristic.readValue()).then(value => {
-              log('> App: ' + getHexFromDataView(value, 16));
+              App = getHexFromDataView(value, 16);
+              log('> App: ' + App);
             });
             break;
 
@@ -321,4 +346,55 @@ function getHexFromDataView(value, count) {
     hexString += padHex(value.getUint8(index));
   }
   return hexString;
+}
+
+function createDevice() {
+  if (EUI){
+    let socket = new WebSocket("wss://loranet.kz/ws/v2/?app_id=9F9014F4&token=0HC9WPr5plR6kXmMNicKNu");
+    WSRequest = JSON.stringify({ 
+      "cmd": "create_device_req", 
+      "devEui": EUI, 
+      "devAddr": EUI.substring(8, 15), 
+      "application_eui": "EE620D656B3CC7CA", 
+      "description": "MOKO tracker",
+      "app_key": App, 
+      "tariff_code": 1,
+      "nwks_key": NWKS,
+      "apps_key": Apps,
+      "activation": 1
+     }, null, "\t");
+     log(WSRequest);
+     socket.send(WSRequest);
+     socket.close(1000, "Done!");
+     socket.addEventListener('message', function (event) {
+      log('Message from server ', event.data);
+     });
+  } else {
+    log('EUI is empty');
+  }
+}
+
+function updateDevice() {
+  if (EUI){
+    let socket = new WebSocket("wss://loranet.kz/ws/v2/?app_id=9F9014F4&token=0HC9WPr5plR6kXmMNicKNu");
+    WSRequest = JSON.stringify({ 
+      "cmd": "update_device_req", 
+      "devEui": EUI, 
+      "devAddr": EUI.substring(8, 15), 
+      "application_eui": "EE620D656B3CC7CA", 
+      "description": "MOKO tracker",
+      "app_key": App, 
+      "nwks_key": NWKS,
+      "apps_key": Apps,
+      "activation": 1
+     }, null, "\t");
+     log(WSRequest);
+     socket.send(WSRequest);
+     socket.close(1000, "Done!");
+     socket.addEventListener('message', function (event) {
+      log('Message from server ', event.data);
+     });
+  } else {
+    log('EUI is empty');
+  }
 }
